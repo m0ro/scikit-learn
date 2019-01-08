@@ -5,6 +5,7 @@ this module can be regarded as dimensionality reduction techniques.
 """
 
 from .nmf import NMF, non_negative_factorization
+from .sp_nmf import sp_NMF, sp_non_negative_factorization
 from .pca import PCA
 from .incremental_pca import IncrementalPCA
 from .kernel_pca import KernelPCA
