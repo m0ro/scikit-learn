@@ -492,13 +492,14 @@ def _fit_coordinate_descent(X, W, H, tol=1e-4, max_iter=200, l1_reg_W=0,
     X = check_array(X, accept_sparse='csr')
 
     rng = check_random_state(random_state)
-
+    error_progression = []
     for n_iter in range(max_iter):
         violation = 0.
 
         # Update W
         violation += _update_coordinate_descent(X, W, Ht, l1_reg_W,
                                                 l2_reg_W, shuffle, rng)
+        error_progression = error_progression+[violation]
         # moro - fix contraints on W (traces)
 
         # the wdw must be set ugint the known decay time
@@ -520,6 +521,7 @@ def _fit_coordinate_descent(X, W, H, tol=1e-4, max_iter=200, l1_reg_W=0,
         if update_H:
             violation += _update_coordinate_descent(X.T, Ht, W, l1_reg_H,
                                                     l2_reg_H, shuffle, rng)
+        error_progression = error_progression+[violation]
         # moro - fix contraints on H (footprints)
 
 
@@ -537,7 +539,7 @@ def _fit_coordinate_descent(X, W, H, tol=1e-4, max_iter=200, l1_reg_W=0,
                 print("Converged at iteration", n_iter + 1)
             break
 
-    return W, Ht.T, n_iter
+    return W, Ht.T, n_iter, error_progression
 
 
 def _multiplicative_update_w(X, W, H, beta_loss, l1_reg_W, l2_reg_W, gamma,
@@ -1050,7 +1052,7 @@ def non_negative_factorization(X, W=None, H=None, n_components=None,
         alpha, l1_ratio, regularization)
 
     if solver == 'cd':
-        W, H, n_iter = _fit_coordinate_descent(X, W, H, tol, max_iter,
+        W, H, n_iter, error_progression = _fit_coordinate_descent(X, W, H, tol, max_iter,
                                                l1_reg_W, l1_reg_H,
                                                l2_reg_W, l2_reg_H,
                                                update_H=update_H,
@@ -1070,7 +1072,7 @@ def non_negative_factorization(X, W=None, H=None, n_components=None,
         warnings.warn("Maximum number of iteration %d reached. Increase it to"
                       " improve convergence." % max_iter, ConvergenceWarning)
 
-    return W, H, n_iter
+    return W, H, n_iter, error_progression
 
 
 class sp_NMF(BaseEstimator, TransformerMixin):
@@ -1236,6 +1238,7 @@ class sp_NMF(BaseEstimator, TransformerMixin):
         self.l1_ratio = l1_ratio
         self.verbose = verbose
         self.shuffle = shuffle
+        self.error_progression = []
 
     def fit_transform(self, X, y=None, W=None, H=None):
         """Learn a NMF model for the data X and returns the transformed data.
@@ -1262,7 +1265,7 @@ class sp_NMF(BaseEstimator, TransformerMixin):
         """
         X = check_array(X, accept_sparse=('csr', 'csc'), dtype=float)
 
-        W, H, n_iter_ = non_negative_factorization(
+        W, H, n_iter_, error_progression = non_negative_factorization(
             X=X, W=W, H=H, n_components=self.n_components, init=self.init,
             update_H=True, solver=self.solver, beta_loss=self.beta_loss,
             tol=self.tol, max_iter=self.max_iter, alpha=self.alpha,
@@ -1272,7 +1275,7 @@ class sp_NMF(BaseEstimator, TransformerMixin):
 
         self.reconstruction_err_ = _beta_divergence(X, W, H, self.beta_loss,
                                                     square_root=True)
-
+        self.error_progression = error_progression
         self.n_components_ = H.shape[0]
         self.components_ = H
         self.n_iter_ = n_iter_
@@ -1311,7 +1314,7 @@ class sp_NMF(BaseEstimator, TransformerMixin):
         """
         check_is_fitted(self, 'n_components_')
 
-        W, _, n_iter_ = non_negative_factorization(
+        W, _, n_iter_, _ = non_negative_factorization(
             X=X, W=None, H=self.components_, n_components=self.n_components_,
             init=self.init, update_H=False, solver=self.solver,
             beta_loss=self.beta_loss, tol=self.tol, max_iter=self.max_iter,
