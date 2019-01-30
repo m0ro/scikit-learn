@@ -500,20 +500,20 @@ def _fit_coordinate_descent(X, W, H, tol=1e-4, max_iter=200, l1_reg_W=0,
         violation += _update_coordinate_descent(X, W, Ht, l1_reg_W,
                                                 l2_reg_W, shuffle, rng)
         # moro - fix contraints on W (traces)
-        # the wdw must be set ugint the known decay time
 
-        apph = 0.5 # custom regulation factor
-        for idx in range(np.shape(W)[1]):
-            tt = W[:,idx]
-            tt = np.convolve(tt, np.ones((5,)), mode='same')
-            tt = tt[:-1] - tt[1:]
-            # tt[tt>0] = 0
-            nn = np.max(W[:,idx])
-            # W[1:,idx] = (1-apph)*W[1:,idx]+apph*( W[1:,idx]/((tt/np.min(tt))*np.max(W[:-1,idx])) )
-            # enhance the fast ramps
-            W[1:,idx] = (1-apph)*W[1:,idx]+apph*( W[1:,idx]*(tt/(np.max(tt)-np.min(tt))) )
-            # W[1:,idx] = (1-apph)*W[1:,idx]+apph*((tt/np.min(tt))*np.max(W[:-1,idx]))
-            W[:,idx] = (W[:,idx]/np.max(W[:,idx]))*nn
+        # the wdw must be set ugint the known decay time
+        # apph = 0.5 # custom regulation factor
+        # for idx in range(np.shape(W)[1]):
+        #     tt = W[:,idx]
+        #     tt = np.convolve(tt, np.ones((5,)), mode='same')
+        #     tt = tt[:-1] - tt[1:]
+        #     # tt[tt>0] = 0
+        #     nn = np.max(W[:,idx])
+        #     # W[1:,idx] = (1-apph)*W[1:,idx]+apph*( W[1:,idx]/((tt/np.min(tt))*np.max(W[:-1,idx])) )
+        #     # enhance the fast ramps
+        #     W[1:,idx] = (1-apph)*W[1:,idx]+apph*( W[1:,idx]*(tt/(np.max(tt)-np.min(tt))) )
+        #     # W[1:,idx] = (1-apph)*W[1:,idx]+apph*((tt/np.min(tt))*np.max(W[:-1,idx]))
+        #     W[:,idx] = (W[:,idx]/np.max(W[:,idx]))*nn
 
 
         # Update H
@@ -851,7 +851,7 @@ def _fit_multiplicative_update(X, W, H, beta_loss='frobenius',
     return W, H, n_iter
 
 
-def sp_non_negative_factorization(X, W=None, H=None, n_components=None,
+def non_negative_factorization(X, W=None, H=None, n_components=None,
                                init='random', update_H=True, solver='cd',
                                beta_loss='frobenius', tol=1e-4,
                                max_iter=200, alpha=0., l1_ratio=0.,
@@ -992,8 +992,8 @@ def sp_non_negative_factorization(X, W=None, H=None, n_components=None,
     --------
     >>> import numpy as np
     >>> X = np.array([[1,1], [2, 1], [3, 1.2], [4, 1], [5, 0.8], [6, 1]])
-    >>> from sklearn.decomposition import sp_non_negative_factorization
-    >>> W, H, n_iter = sp_non_negative_factorization(X, n_components=2,
+    >>> from sklearn.decomposition import non_negative_factorization
+    >>> W, H, n_iter = non_negative_factorization(X, n_components=2,
     ... init='random', random_state=0)
 
     References
@@ -1262,7 +1262,7 @@ class sp_NMF(BaseEstimator, TransformerMixin):
         """
         X = check_array(X, accept_sparse=('csr', 'csc'), dtype=float)
 
-        W, H, n_iter_ = sp_non_negative_factorization(
+        W, H, n_iter_ = non_negative_factorization(
             X=X, W=W, H=H, n_components=self.n_components, init=self.init,
             update_H=True, solver=self.solver, beta_loss=self.beta_loss,
             tol=self.tol, max_iter=self.max_iter, alpha=self.alpha,
@@ -1311,7 +1311,7 @@ class sp_NMF(BaseEstimator, TransformerMixin):
         """
         check_is_fitted(self, 'n_components_')
 
-        W, _, n_iter_ = sp_non_negative_factorization(
+        W, _, n_iter_ = non_negative_factorization(
             X=X, W=None, H=self.components_, n_components=self.n_components_,
             init=self.init, update_H=False, solver=self.solver,
             beta_loss=self.beta_loss, tol=self.tol, max_iter=self.max_iter,
